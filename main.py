@@ -1,17 +1,12 @@
 # Курсовой проект «Резервное копирование»
 
-## мой id – 659301486
-## id приложения 51437381
-## access_token=vk1.a.1OxPDiFIwN6hMRlNx2vCAk9FHZKv1Hur_UJ0q9CojBChvpmrh6xShI-bt6K8HHUPedMqeDIknSlRFr30ASqzFYfiy9ulvElVTmWDGJBowpw5G5WNyuGpkzEeOcIVTQvBcLcafr5ARZSrBEp0VwAmiK371aO83_8slwBrSaoL-EcDW3I9DleEdEMSuMnkKkOe
-## аутентификатор целиком https://oauth.vk.com/blank.html#access_token=vk1.a.1OxPDiFIwN6hMRlNx2vCAk9FHZKv1Hur_UJ0q9CojBChvpmrh6xShI-bt6K8HHUPedMqeDIknSlRFr30ASqzFYfiy9ulvElVTmWDGJBowpw5G5WNyuGpkzEeOcIVTQvBcLcafr5ARZSrBEp0VwAmiK371aO83_8slwBrSaoL-EcDW3I9DleEdEMSuMnkKkOe&expires_in=0&user_id=659301486
-
-
 # Получение фотографий из профиля
 import requests
 import sys
 import json
 from pprint import pprint
 import urllib.request
+import os
 
 class VkUser:
     url = 'https://api.vk.com/method/'
@@ -37,7 +32,7 @@ class VkUser:
             json.dump(res, file, indent = 4)
         return (res)
 
-    def get_wall_pictures(self, id, count = 7):
+    def get_wall_pictures(self, id, count = 5):
         """The function gets a dictionary with wall pictures in different types"""
         get_wall_pictures_url = self.url + 'photos.get'
         get_wall_pictures_params = {
@@ -82,16 +77,23 @@ class Ya_Uploader:
         """The function creates a jpg-file in PyCharm project to prepare loading a profile picture to Yandex.Disk"""
         profile_pictures = profile_dict['response']['items'][0]['sizes']
         height = 0
+        width = 0
         url = 0
         for picture in profile_pictures:
             if picture['height'] > height:
                 height = picture['height']
+                width = picture['width']
                 url = picture['url']
         picture_name = str(profile_dict['response']['items'][0]['likes']['count']) + '_profile.jpg'
         img = urllib.request.urlopen(url).read()
         out = open(picture_name, "wb")
         out.write(img)
         out.close
+        dict_res_profile = {}
+        dict_res_profile['name'] = picture_name
+        dict_res_profile['height'] = height
+        dict_res_profile['width'] = width
+        dict_res['profile'] = dict_res_profile
         return picture_name
 
     def get_upload_profile_picture_link(self, profile_picture, folder_name):
@@ -110,19 +112,22 @@ class Ya_Uploader:
         if response.status_code == 201:
             print('Фото профиля загружено на Яндекс.Диск')
 
-
 ## Сохранение на диск фото со стены
     def get_wall_pictures(self, wall_dict):
         """The function creates a jpg-files in PyCharm project to prepare loading wall pictures to Yandex.Disk"""
         wall_pictures = wall_dict['response']['items']
         wall_pictures_list = []
+        dict_res_wall = {}
+        number = 1
         for picture in wall_pictures:
             height = 0
+            width = 0
             url = 0
             sizes = picture['sizes']
             for size in sizes:
                 if size['height'] > height:
                     height = size['height']
+                    width = size['width']
                     url = size['url']
             date = picture['date']
             picture_name = str(picture['likes']['count']) + '.jpg'
@@ -136,6 +141,13 @@ class Ya_Uploader:
             out.write(img)
             out.close
             wall_pictures_list.append(picture_name)
+            dict_res_pict = {}
+            dict_res_pict['name'] = picture_name
+            dict_res_pict['height'] = height
+            dict_res_pict['width'] = width
+            dict_res_wall[number] = dict_res_pict
+            number += 1
+        dict_res['wall_pictures'] = dict_res_wall
         return (wall_pictures_list)
 
     def get_upload_wall_pictures_link(self, wall_picture, folder_name):
@@ -155,12 +167,6 @@ class Ya_Uploader:
           if response.status_code == 201:
               print(f'Фото {wall_picture} загружено на Яндекс.Диск')
 
- #   def remove_temporary_files(self, profile_picture):
-
-
-
-# удалить файл из каталога, сделать json, сделать файл зависимостей, токен Яндекса вводить
-
 # Основная программа
 
 if __name__ == '__main__':
@@ -169,15 +175,15 @@ if __name__ == '__main__':
     my_vk_token = 'vk1.a.1OxPDiFIwN6hMRlNx2vCAk9FHZKv1Hur_UJ0q9CojBChvpmrh6xShI-bt6K8HHUPedMqeDIknSlRFr30ASqzFYfiy9ulvElVTmWDGJBowpw5G5WNyuGpkzEeOcIVTQvBcLcafr5ARZSrBEp0VwAmiK371aO83_8slwBrSaoL-EcDW3I9DleEdEMSuMnkKkOe'
     last_version = '5.131'
     backup_save = VkUser(my_vk_token, last_version)
-    # need_id = input('Введите ID пользователя, чьи фото нужно загрузить: ')
-    need_id = '659301486'                ################ это потом убрать
+    need_id = '659301486'
+    dict_res = {}
+    dict_res['user_id'] = need_id
     profile_dict = backup_save.get_profile_pictures(need_id)
     wall_dict = backup_save.get_wall_pictures(need_id)
 
     # Загружаем фото профиля на Яндекс.Диск
-    my_ya_token = 'y0_AgAAAABa9ArWAADLWwAAAADP5shy7Baw-QirS1uXiBRhb1Z7jKbN-vc'
+    my_ya_token = input('Введите ваш токен с Полигона Яндекс.Диска: ')
     uploader = Ya_Uploader(my_ya_token)
-    uploader.create_folder(need_id)
     folder_name = uploader.create_folder(need_id)
     profile_picture = uploader.get_profile_picture(profile_dict)
     uploader.upload_profile_picture(profile_picture, folder_name)
@@ -185,6 +191,19 @@ if __name__ == '__main__':
     # Загружаем фото со стены на Яндекс.Диск
     wall_pictures_list = uploader.get_wall_pictures(wall_dict)
     uploader.upload_wall_pictures(wall_pictures_list, folder_name)
+
+    # Удаляем временные файлы
+    os.remove(profile_picture)
+    for picture in wall_pictures_list:
+        os.remove(picture)
+    os.remove('wall_pictures.json')
+    os.remove('profile.json')
+
+    # Создаем файл json с данными по фотографиям
+    with open ('loading_result.json', 'w') as file:
+        json.dump(dict_res, file, indent=4)
+
+
 
 
 
